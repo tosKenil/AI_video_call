@@ -65,36 +65,36 @@ const upload = multer({
 
 
 // ----------------- MongoDB Connection -----------------
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+// mongoose.connect(process.env.MONGO_URI, {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+// })
+//   .then(() => console.log("✅ MongoDB connected"))
+//   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ----------------- Mongoose Model -----------------
-const verificationSchema = new mongoose.Schema(
-  {
-    userId: { type: String, required: true },
-    idVerified: { type: Boolean, default: false },
-    idInfo: {
-      idNumber: String,
-      name: String,
-      dob: String,
-      gender: String,
-      mobile: String,
-      address: String,
-    },
-    idCard: { type: String, default: null },
-    hand: { type: Boolean, default: false },
-    head: { type: Boolean, default: false },
-    blink: { type: Boolean, default: false },
-    fingers: { type: Boolean, default: false },
-  },
-  { timestamps: true, collection: "verification_status" }
-);
+// // ----------------- Mongoose Model -----------------
+// const verificationSchema = new mongoose.Schema(
+//   {
+//     userId: { type: String, required: true },
+//     idVerified: { type: Boolean, default: false },
+//     idInfo: {
+//       idNumber: String,
+//       name: String,
+//       dob: String,
+//       gender: String,
+//       mobile: String,
+//       address: String,
+//     },
+//     idCard: { type: String, default: null },
+//     hand: { type: Boolean, default: false },
+//     head: { type: Boolean, default: false },
+//     blink: { type: Boolean, default: false },
+//     fingers: { type: Boolean, default: false },
+//   },
+//   { timestamps: true, collection: "verification_status" }
+// );
 
-const VerificationState = mongoose.model("verification_status", verificationSchema);
+// const VerificationState = mongoose.model("verification_status", verificationSchema);
 
 // ----------------- Agora Config -----------------
 const APP_ID = process.env.AGORA_APP_ID;
