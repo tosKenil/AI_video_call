@@ -538,6 +538,6 @@ app.get('/index4', (req, res) =>
 );
 
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(3000, () => console.log("Running on http://localhost:3000"));
+}
