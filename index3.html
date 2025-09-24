@@ -1,0 +1,1052 @@
+set AI agent avatar
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Video Verification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .video-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .video-box {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-box h3 {
+            background: #2d8cf0;
+            color: #fff;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+        }
+
+        video {
+            width: 100%;
+            height: 422px;
+            background: #000;
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .controls {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            background: #2d8cf0;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background .3s;
+        }
+
+        button:hover {
+            background: #1e6fd9;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .ai-message {
+            background: #f8f8f8;
+            border-left: 4px solid #2d8cf0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+            flex: 1;
+        }
+
+        .verification-status h3 {
+            margin-top: 0
+        }
+
+        .status-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .verified {
+            color: #19be6b;
+        }
+
+        .pending {
+            color: #ff9900;
+        }
+
+        .failed {
+            color: #ed4014;
+        }
+
+        #idData {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0faff;
+            border-radius: 4px;
+            display: none;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .speaking-text {
+            position: absolute;
+            top: 8px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 14px;
+            color: #19be6b;
+            font-weight: 500;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50%,
+            100% {
+                opacity: 1;
+            }
+
+            25%,
+            75% {
+                opacity: 0;
+            }
+        }
+
+        #analysisVideo {
+            display: none;
+        }
+
+        /* AI Agent box */
+        .agent-stage {
+            background: #0b0b0b;
+            color: #fff;
+            height: 422px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #aiAgent {
+            width: 220px;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .agent-name {
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 14px;
+            opacity: .8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AI Video Verification</h1>
+
+        <div class="video-container">
+            <div class="video-box">
+                <h3>Your Camera (Agora)</h3>
+                <video id="localVideo" autoplay playsinline muted></video>
+                <canvas id="overlay" class="overlay"></canvas>
+            </div>
+            <div class="video-box">
+                <h3>AI Agent</h3>
+                <div class="agent-stage">
+                    <div id="aiAgent" aria-label="AI avatar"></div>
+                    <div class="agent-name" id="agentName">Assistant</div>
+                    <div id="speakingText" class="speaking-text" style="display:none;">speaking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">Start Verification</button>
+            <button id="captureBtn" disabled>Capture ID</button>
+            <button id="nextBtn" disabled>Next Step</button>
+            <!-- Optional mute UI (uncomment block below + JS listeners if you want it visible)
+      <div class="audio-control">
+        <button id="muteBtn">Mute Voice</button>
+        <span id="volumeStatus">Volume: On</span>
+      </div>
+      -->
+        </div>
+
+        <div class="ai-message" id="aiMessage">Please click "Start Verification" to begin.</div>
+
+        <div class="row">
+            <div class="card verification-status">
+                <h3>Verification Status</h3>
+                <div class="status-item">
+                    <span class="status-label">Liveness Challenge 1:</span>
+                    <span class="status-value pending" id="livenessStatus">Not verified</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Liveness Challenge 2:</span>
+                    <span class="status-value pending" id="livenessStatus2">Not verified</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">ID Verification:</span>
+                    <span class="status-value pending" id="idStatus">Not verified</span>
+                </div>
+                <div id="idData"></div>
+            </div>
+
+            <canvas id="captureCanvas"></canvas>
+            <video id="analysisVideo" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Agora -->
+        <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.18.0.js"></script>
+        <!-- MediaPipe -->
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+</body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        'use strict';
+
+        // --- DOM ---
+        const localVideo = document.getElementById('localVideo');
+        const analysisVideo = document.getElementById('analysisVideo');
+        const overlay = document.getElementById('overlay');
+        const octx = overlay.getContext('2d');
+
+        const captureCanvas = document.getElementById('captureCanvas');
+        const captureCtx = captureCanvas.getContext('2d');
+
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeStatus = document.getElementById('volumeStatus');
+
+        const aiMessage = document.getElementById('aiMessage');
+        const livenessStatus = document.getElementById('livenessStatus');
+        const livenessStatus2 = document.getElementById('livenessStatus2');
+        const idStatus = document.getElementById('idStatus');
+        const idData = document.getElementById('idData');
+
+        // AI Agent avatar
+        const aiAgent = document.getElementById('aiAgent');
+        const agentName = document.getElementById('agentName');
+
+        // --- Config ---
+        const API_BASE = 'http://localhost:5001';
+        const CHANNEL = 'verification-channel';
+        const UID = Math.floor(Math.random() * 1_000_000);
+
+        // --- Agora / tracks ---
+        let rtcClient = null;
+        let localTracks = [];
+
+        // --- MediaPipe ---
+        let hands = null, faceMesh = null, mpCamera = null;
+        let sending = false;
+
+        // --- Audio (stable) + Lip Sync ---
+        let isMuted = false, voiceReady = false, preferredVoice = null;
+        let currentUtterance = null;
+
+        // Lip-sync state
+        let mouthNode = null, mouthBaseY = 145, mouthBaseH = 10;
+        let lipTimer = null, lipRAF = null;
+        let lastBoundary = 0;
+
+        // Random avatar builder (SVG)
+        function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function buildRandomAvatar() {
+            const skin = randomFrom(['#fbd1b7', '#f1c27d', '#c68642', '#8d5524', '#f6d7c3']);
+            const hair = randomFrom(['#2c2c2c', '#5a3825', '#9c6d3a', '#d1b280', '#1f4a6e', '#4b2e83']);
+            const shirt = randomFrom(['#2d8cf0', '#19be6b', '#ff9900', '#ed4014', '#8c54ff']);
+            const bg = '#111';
+            const nameList = ['Assistance'];
+            agentName.textContent = randomFrom(nameList);
+
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('viewBox', '0 0 220 220');
+            svg.setAttribute('width', '220');
+            svg.setAttribute('height', '220');
+
+            // bg circle
+            const bgc = document.createElementNS(svgNS, 'circle');
+            bgc.setAttribute('cx', '110'); bgc.setAttribute('cy', '110'); bgc.setAttribute('r', '108');
+            bgc.setAttribute('fill', bg);
+            svg.appendChild(bgc);
+
+            // shirt
+            const shirtShape = document.createElementNS(svgNS, 'path');
+            shirtShape.setAttribute('d', 'M40 170 Q110 210 180 170 L180 220 L40 220 Z');
+            shirtShape.setAttribute('fill', shirt);
+            svg.appendChild(shirtShape);
+
+            // face
+            const face = document.createElementNS(svgNS, 'circle');
+            face.setAttribute('cx', '110'); face.setAttribute('cy', '110'); face.setAttribute('r', '58');
+            face.setAttribute('fill', skin);
+            svg.appendChild(face);
+
+            // hair (simple)
+            const hairShape = document.createElementNS(svgNS, 'path');
+            hairShape.setAttribute('d', 'M52 92 Q110 38 168 92 Q160 60 140 48 Q110 30 80 48 Q60 60 52 92 Z');
+            hairShape.setAttribute('fill', hair);
+            svg.appendChild(hairShape);
+
+            // eyes
+            const eyeL = document.createElementNS(svgNS, 'circle');
+            eyeL.setAttribute('cx', '90'); eyeL.setAttribute('cy', '110'); eyeL.setAttribute('r', '5');
+            eyeL.setAttribute('fill', '#0b0b0b');
+            const eyeR = document.createElementNS(svgNS, 'circle');
+            eyeR.setAttribute('cx', '130'); eyeR.setAttribute('cy', '110'); eyeR.setAttribute('r', '5');
+            eyeR.setAttribute('fill', '#0b0b0b');
+            svg.appendChild(eyeL); svg.appendChild(eyeR);
+
+            // mouth (rectangle we animate)
+            const mouth = document.createElementNS(svgNS, 'rect');
+            mouth.setAttribute('x', '90'); mouth.setAttribute('y', String(mouthBaseY));
+            mouth.setAttribute('width', '40'); mouth.setAttribute('height', String(mouthBaseH));
+            mouth.setAttribute('rx', '8'); mouth.setAttribute('fill', '#e33');
+            mouth.setAttribute('id', 'avatarMouth');
+            svg.appendChild(mouth);
+
+            // small cheeks for cuteness
+            const cheekL = document.createElementNS(svgNS, 'circle');
+            cheekL.setAttribute('cx', '80'); cheekL.setAttribute('cy', '125');
+            cheekL.setAttribute('r', '6'); cheekL.setAttribute('fill', '#ffb3b3'); cheekL.setAttribute('opacity', '.6');
+            const cheekR = document.createElementNS(svgNS, 'circle');
+            cheekR.setAttribute('cx', '140'); cheekR.setAttribute('cy', '125');
+            cheekR.setAttribute('r', '6'); cheekR.setAttribute('fill', '#ffb3b3'); cheekR.setAttribute('opacity', '.6');
+            svg.appendChild(cheekL); svg.appendChild(cheekR);
+
+            aiAgent.innerHTML = '';
+            aiAgent.appendChild(svg);
+            mouthNode = mouth;
+        }
+
+        buildRandomAvatar();
+
+        function setMouth(openAmt) {
+            // openAmt: 0..1
+            if (!mouthNode) return;
+            const h = mouthBaseH + openAmt * 22; // max open height
+            const y = mouthBaseY - (h - mouthBaseH) / 2; // anchor around center
+            mouthNode.setAttribute('height', String(h));
+            mouthNode.setAttribute('y', String(y));
+            // also tweak color a bit with openness
+            const r = Math.round(180 + openAmt * 60);
+            mouthNode.setAttribute('fill', `rgb(${r},50,50)`);
+        }
+
+        function startLipSync(utterance) {
+            lastBoundary = performance.now();
+            // boundary-driven pops on word/char boundaries
+            utterance.onboundary = () => {
+                lastBoundary = performance.now();
+                // quick open burst
+                setMouth(0.9);
+                // decay quickly after boundary
+                if (lipTimer) clearTimeout(lipTimer);
+                lipTimer = setTimeout(() => setMouth(0.25), 110);
+            };
+
+            // smooth idle motion while speaking (fallback if boundaries sparse)
+            const start = performance.now();
+            function loop() {
+                const t = (performance.now() - start) / 1000;
+                // base oscillation (like syllable rate 4–6 Hz)
+                const base = (Math.sin(t * 5) + 1) / 2; // 0..1
+                // if we recently had a boundary, boost
+                const since = performance.now() - lastBoundary;
+                const boost = since < 140 ? 0.5 : 0.0;
+                const amt = Math.max(0.15, Math.min(1.0, base * 0.6 + boost));
+                setMouth(amt);
+                lipRAF = requestAnimationFrame(loop);
+            }
+            cancelLipSync(); // clean any prior
+            lipRAF = requestAnimationFrame(loop);
+        }
+
+        function cancelLipSync() {
+            if (lipTimer) { clearTimeout(lipTimer); lipTimer = null; }
+            if (lipRAF) { cancelAnimationFrame(lipRAF); lipRAF = null; }
+        }
+
+        function stopLipSync() {
+            cancelLipSync();
+            setMouth(0.1); // relaxed
+        }
+
+        // --- Voice loading and TTS control ---
+        function loadVoicesOnce() {
+            return new Promise((resolve) => {
+                const tryLoad = () => {
+                    const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+                    if (voices && voices.length) {
+                        const prefs = ['en-IN', 'en-GB', 'en-US', 'en-AU', 'en-NZ', 'en'];
+                        preferredVoice = null;
+                        for (const lang of prefs) {
+                            const v = voices.find(v => (v.lang || '').toLowerCase().startsWith(lang.toLowerCase()));
+                            if (v) { preferredVoice = v; break; }
+                        }
+                        if (!preferredVoice) preferredVoice = voices[0];
+                        voiceReady = true; resolve(true); return;
+                    }
+                    setTimeout(tryLoad, 120);
+                };
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.getVoices();
+                    if ('onvoiceschanged' in window.speechSynthesis) {
+                        window.speechSynthesis.onvoiceschanged = () => tryLoad();
+                    }
+                }
+                tryLoad();
+            });
+        }
+
+        function stopSpeech() {
+            try {
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                currentUtterance = null;
+            } catch { }
+            stopLipSync();
+        }
+
+        // TTS returns a Promise; lip-sync ties to utterance lifecycle
+        async function speakText(text) {
+            if (!window.speechSynthesis || isMuted || !text) return Promise.resolve();
+            if (!voiceReady) await loadVoicesOnce();
+            stopSpeech();
+
+            return new Promise((resolve) => {
+                try {
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.rate = 0.98; u.pitch = 1.0; u.volume = 1.0;
+                    if (preferredVoice) u.voice = preferredVoice;
+
+                    // u.onstart = () => startLipSync(u);
+                    // u.onend = () => { currentUtterance = null; stopLipSync(); resolve(); };
+                    // u.onerror = () => { currentUtterance = null; stopLipSync(); resolve(); };
+
+                    u.onstart = () => {
+                        startLipSync(u);
+                        document.getElementById('speakingText').style.display = 'block'; // show blinking text
+                    };
+
+                    u.onend = () => {
+                        currentUtterance = null;
+                        stopLipSync();
+                        document.getElementById('speakingText').style.display = 'none'; // hide text
+                        resolve();
+                    };
+                    u.onerror = () => {
+                        currentUtterance = null;
+                        stopLipSync();
+                        document.getElementById('speakingText').style.display = 'none';
+                        resolve();
+                    };
+
+
+                    currentUtterance = u;
+                    window.speechSynthesis.speak(u);
+                } catch {
+                    resolve();
+                }
+            });
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            if (muteBtn) muteBtn.textContent = isMuted ? 'Unmute Voice' : 'Mute Voice';
+            if (volumeStatus) volumeStatus.textContent = `Volume: ${isMuted ? 'Off' : 'On'}`;
+            if (isMuted) stopSpeech();
+        }
+
+        function textAfterColon(s) {
+            if (typeof s !== 'string') return s;
+            const i = s.indexOf(':');
+            let spoken = (i >= 0 ? s.slice(i + 1) : s).trim();
+            spoken = spoken.replace(/\(Attempt\s*\d+\s*\/\s*\d+\)\s*$/i, '').trim();
+            return spoken.replace(/\s+/g, ' ');
+        }
+
+        function showLineSpeak(displayText, speakOverride = null) {
+            aiMessage.textContent = displayText;
+            const toSpeak = speakOverride != null ? speakOverride : textAfterColon(displayText);
+            return speakText(toSpeak);
+        }
+
+        // --- Flow steps ---
+        let currentStepIndex = 0;
+        const steps = [
+            { name: 'liveness', nextButton: false },
+            { name: 'id', nextButton: true },
+            { name: 'done', nextButton: false },
+        ];
+
+        // --- Questions ---
+        const questions = [
+            { key: 'hand', prompt: 'Please wave your hand left and right.', verifier: verifyHandWave },
+            { key: 'head', prompt: 'Please turn your head left and right.', verifier: verifyHeadMove },
+            { key: 'blink', prompt: 'Please blink your eyes three times.', verifier: verifyBlink },
+            { key: 'fingers', prompt: 'Please hold up your hand showing all five fingers.', verifier: verifyShowFiveFingers },
+        ];
+
+        // --- Liveness state ---
+        let livenessStage = 0; // 0 -> challenge 1, 1 -> challenge 2
+        let currentQuestionIndex = null;
+        let currentQuestion = null;
+        let currentAttempts = 0;
+        const MAX_RETRIES = 3;
+
+        const usedWithinStage = [new Set(), new Set()];
+        let stage0VerifiedIndex = null;
+
+        // --- Detectors state ---
+        let palm = null, handHist = [], noseHistory = [], blinkHistory = [];
+
+        // ---------- Hand wave FSM ----------
+        const DISP_TH = 0.06, RESET_MS = 1800, SMOOTH_ALPHA = 0.5, NEED_TURNS = 2;
+        let waveFSM = { lastDir: 'none', lastExtremeX: null, lastChange: 0, cycles: 0 };
+        function resetWaveFSM(x, now) {
+            waveFSM.lastDir = 'none';
+            waveFSM.lastExtremeX = (x != null ? x : null);
+            waveFSM.lastChange = now || performance.now();
+            waveFSM.cycles = 0;
+        }
+        function updateWaveFSM(x, now) {
+            if (typeof x !== 'number' || Number.isNaN(x)) return;
+            if (waveFSM.lastExtremeX == null) { waveFSM.lastExtremeX = x; waveFSM.lastChange = now; waveFSM.lastDir = 'none'; return; }
+            if (now - waveFSM.lastChange > RESET_MS) { resetWaveFSM(x, now); return; }
+            const dx = x - waveFSM.lastExtremeX;
+            if (waveFSM.lastDir === 'none') {
+                if (dx >= DISP_TH) { waveFSM.lastDir = 'right'; waveFSM.lastExtremeX = x; waveFSM.lastChange = now; }
+                else if (dx <= -DISP_TH) { waveFSM.lastDir = 'left'; waveFSM.lastExtremeX = x; waveFSM.lastChange = now; }
+                else {
+                    if (x > waveFSM.lastExtremeX) waveFSM.lastExtremeX = x;
+                    if (x < waveFSM.lastExtremeX) waveFSM.lastExtremeX = x;
+                }
+                return;
+            }
+            if (waveFSM.lastDir === 'right') {
+                if (x > waveFSM.lastExtremeX) waveFSM.lastExtremeX = x;
+                if ((waveFSM.lastExtremeX - x) >= DISP_TH) { waveFSM.cycles++; waveFSM.lastDir = 'left'; waveFSM.lastExtremeX = x; waveFSM.lastChange = now; }
+            } else {
+                if (x < waveFSM.lastExtremeX) waveFSM.lastExtremeX = x;
+                if ((x - waveFSM.lastExtremeX) >= DISP_TH) { waveFSM.cycles++; waveFSM.lastDir = 'right'; waveFSM.lastExtremeX = x; waveFSM.lastChange = now; }
+            }
+        }
+        function verifyHandWave() { return waveFSM.cycles >= NEED_TURNS; }
+
+        // ---------- Events ----------
+        startBtn.addEventListener('click', startAll);
+        captureBtn.addEventListener('click', captureIdCard);
+        nextBtn.addEventListener('click', nextStep);
+        if (muteBtn) muteBtn.addEventListener('click', toggleMute);
+
+        // ---------- Start flow ----------
+        async function startAll() {
+            startBtn.disabled = true;
+            await loadVoicesOnce();
+            await showLineSpeak('Starting camera and loading models…');
+
+            try {
+                // Agora join & tracks
+                rtcClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+                const tokRes = await fetch(`${API_BASE}/api/agora-token`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channelName: CHANNEL, uid: UID })
+                }).then(r => r.json());
+                if (!tokRes?.token || !tokRes?.appId) throw new Error('Invalid Agora token/appId');
+                await rtcClient.join(tokRes.appId, CHANNEL, tokRes.token, UID);
+                localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                await rtcClient.publish(localTracks);
+                if (localTracks[1]?.play) localTracks[1].play(localVideo);
+
+                // gUM for analysis
+                const gUM = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false });
+                analysisVideo.srcObject = gUM; await analysisVideo.play().catch(() => { });
+                await waitForVideoReady(localVideo); await waitForVideoReady(analysisVideo);
+
+                overlay.width = analysisVideo.videoWidth || 640;
+                overlay.height = analysisVideo.videoHeight || 480;
+
+                await initMediaPipe();
+
+                // Reset flow state
+                currentStepIndex = 0;
+                stage0VerifiedIndex = null;
+                usedWithinStage[0].clear(); usedWithinStage[1].clear();
+                livenessStage = 0; currentAttempts = 0;
+
+                resetWaveFSM(null, performance.now());
+                palm = null; handHist = []; noseHistory = []; blinkHistory = [];
+
+                beginStage(0);
+            } catch (e) {
+                console.error(e);
+                await showLineSpeak('Failed to start. camera access is allowed.');
+                startBtn.disabled = false;
+                cleanup();
+            }
+        }
+
+        function beginStage(stage) {
+            livenessStage = stage; currentAttempts = 0;
+            const idx = pickInitialQuestionForStage(stage);
+            if (idx === null) {
+                markLivenessChallenge(stage, false, '');
+                showLineSpeak('Verification failed. Please try again.');
+                return;
+            }
+            askQuestion(idx);
+        }
+
+        function nextStep() {
+            currentStepIndex++; nextBtn.disabled = true;
+            if (currentStepIndex >= steps.length) return;
+            const step = steps[currentStepIndex];
+            if (step.name === 'id') {
+                showLineSpeak('Great! Hold your ID clearly in the frame, then click “Capture ID”.');
+                captureBtn.disabled = false;
+            } else if (step.name === 'done') {
+                showLineSpeak('Your verification is complete. Thank you!');
+                captureBtn.disabled = true; startBtn.disabled = true;
+                cleanup();
+            }
+        }
+
+        function pickInitialQuestionForStage(stage) {
+            const all = [...Array(questions.length).keys()];
+            let pool;
+            if (stage === 0) {
+                pool = all.filter(i => !usedWithinStage[0].has(i));
+                if (!pool.length) return null;
+            } else {
+                pool = all.filter(i => i !== stage0VerifiedIndex && !usedWithinStage[1].has(i));
+                if (!pool.length) return null;
+            }
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        function pickAlternateForStage(stage) {
+            const all = [...Array(questions.length).keys()];
+            let pool;
+            if (stage === 0) {
+                pool = all.filter(i => !usedWithinStage[0].has(i));
+                if (!pool.length) return null;
+            } else {
+                pool = all.filter(i => i !== stage0VerifiedIndex && !usedWithinStage[1].has(i));
+                if (!pool.length) return null;
+            }
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        async function askQuestion(index) {
+            currentQuestionIndex = index;
+            currentQuestion = questions[index];
+            currentAttempts = 0;
+
+            usedWithinStage[livenessStage].add(index);
+
+            resetWaveFSM(null, performance.now());
+            handHist = []; noseHistory = []; blinkHistory = [];
+
+            await showAttemptLine(1);
+
+            try {
+                await runVerifier(currentQuestion.verifier, 4000);
+                await onVerifierPass();
+            } catch {
+                currentAttempts = 1;
+                await retrySameOrAlternate();
+            }
+        }
+
+        async function showAttemptLine(n) {
+            const display = `Liveness challenge ${livenessStage + 1}: ${currentQuestion.prompt} (Attempt ${n}/3)`;
+            await showLineSpeak(display, currentQuestion.prompt);
+        }
+
+        async function onVerifierPass() {
+            markLivenessChallenge(livenessStage, true, currentQuestion.key);
+            try {
+                await fetch(`${API_BASE}/api/update-verification`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: UID, step: currentQuestion.key, value: true })
+                });
+            } catch { }
+            if (livenessStage === 0) {
+                stage0VerifiedIndex = currentQuestionIndex;
+                beginStage(1);
+            } else {
+                await showLineSpeak('Liveness checks passed. Please show your ID and click “Capture ID”.');
+                captureBtn.disabled = false;
+                setTimeout(() => { currentStepIndex = 0; nextStep(); }, 600);
+            }
+        }
+
+        async function retrySameOrAlternate() {
+            if (currentAttempts < MAX_RETRIES) {
+                const nextAttempt = currentAttempts + 1;
+                await showAttemptLine(nextAttempt);
+                resetWaveFSM(null, performance.now()); handHist = [];
+                try {
+                    await runVerifier(currentQuestion.verifier, 4000);
+                    await onVerifierPass();
+                } catch {
+                    currentAttempts++;
+                    if (currentAttempts < MAX_RETRIES) {
+                        await retrySameOrAlternate();
+                    } else {
+                        const alt = pickAlternateForStage(livenessStage);
+                        if (alt !== null) {
+                            await askQuestion(alt);
+                        } else {
+                            markLivenessChallenge(livenessStage, false, currentQuestion?.key || '');
+                            await showLineSpeak('Verification failed. Please try again.');
+                        }
+                    }
+                }
+            } else {
+                const alt = pickAlternateForStage(livenessStage);
+                if (alt !== null) await askQuestion(alt);
+                else {
+                    markLivenessChallenge(livenessStage, false, currentQuestion?.key || '');
+                    await showLineSpeak('Verification failed. Please try again.');
+                }
+            }
+        }
+
+        function markLivenessChallenge(index, success, key = '') {
+            if (index === 0) {
+                livenessStatus.textContent = success ? `Verified (${key})` : 'Failed';
+                livenessStatus.className = `status-value ${success ? 'verified' : 'failed'}`;
+            } else {
+                livenessStatus2.textContent = success ? `Verified (${key})` : 'Failed';
+                livenessStatus2.className = `status-value ${success ? 'verified' : 'failed'}`;
+            }
+        }
+
+        function runVerifier(verifierFn, timeWindowMs) {
+            return new Promise((resolve, reject) => {
+                let done = false;
+                const endAt = performance.now() + timeWindowMs;
+                const tick = async () => {
+                    if (done) return;
+                    try { const ok = await verifierFn(); if (ok) { done = true; resolve(); return; } } catch { }
+                    if (performance.now() > endAt) { done = true; reject(new Error('timeout')); return; }
+                    requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            });
+        }
+
+        // ---------- MediaPipe init / handlers ----------
+        async function initMediaPipe() {
+            const handsLib = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+            handsLib.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5, selfieMode: true });
+            handsLib.onResults(onHandsResults);
+
+            const faceLib = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+            faceLib.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5, selfieMode: true });
+            faceLib.onResults(onFaceResults);
+
+            hands = handsLib; faceMesh = faceLib;
+
+            mpCamera = new Camera(analysisVideo, {
+                onFrame: async () => {
+                    if (!sending) return;
+                    try { await hands.send({ image: analysisVideo }); await faceMesh.send({ image: analysisVideo }); } catch { }
+                },
+                width: 640, height: 480,
+            });
+            sending = true; mpCamera.start();
+        }
+
+        function onHandsResults(results) {
+            let lastHands = [];
+            if (results.multiHandLandmarks?.length) {
+                for (const lm of results.multiHandLandmarks) {
+                    let minX = 1, maxX = 0, minY = 1, maxY = 0;
+                    lm.forEach(p => { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; });
+                    lastHands.push({ lm, bbox: { minX, maxX, minY, maxY }, time: performance.now() });
+                }
+            }
+            if (lastHands.length) {
+                let best = null, bestArea = -1;
+                for (const h of lastHands) {
+                    const area = (h.bbox.maxX - h.bbox.minX) * (h.bbox.maxY - h.bbox.minY);
+                    if (area > bestArea) { bestArea = area; best = h; }
+                }
+                const lm = best.lm;
+                const idx = [0, 5, 9, 13, 17];
+                let sx = 0, sy = 0; idx.forEach(i => { sx += lm[i].x; sy += lm[i].y; });
+                const cx = sx / idx.length, cy = sy / idx.length;
+
+                const now = performance.now();
+                if (!palm) {
+                    palm = { x: cx, y: cy, smX: cx, t: now, bbox: best.bbox, lm };
+                    handHist = [{ x: cx, t: now }]; resetWaveFSM(cx, now);
+                } else {
+                    const smX = 0.5 * cx + 0.5 * palm.smX;
+                    palm = { x: cx, y: cy, smX, t: now, bbox: best.bbox, lm };
+                    handHist.push({ x: smX, t: now });
+                    const cutoff = now - 2500; handHist = handHist.filter(p => p.t >= cutoff);
+                    updateWaveFSM(smX, now);
+                }
+            } else {
+                const cutoff = performance.now() - 2500;
+                handHist = handHist.filter(p => p.t >= cutoff);
+                if (!handHist.length) palm = null;
+            }
+            drawOverlay();
+        }
+
+        function onFaceResults(results) {
+            if (results.multiFaceLandmarks?.length) {
+                const lm = results.multiFaceLandmarks[0];
+                const nose = lm[4];
+                noseHistory.push({ x: nose.x, time: performance.now() });
+                const cutoff = performance.now() - 1500; noseHistory = noseHistory.filter(p => p.time >= cutoff);
+                detectBlink(lm);
+            }
+        }
+
+        // ---------- Verifiers ----------
+        function verifyHeadMove() {
+            if (!noseHistory.length) return false;
+            const xs = noseHistory.map(p => p.x);
+            if (xs.length < 6) return false;
+            const amp = Math.max(...xs) - Math.min(...xs);
+            if (amp < 0.05) return false;
+            let direction = 0, cycles = 0;
+            for (let i = 1; i < xs.length; i++) {
+                const d = xs[i] - xs[i - 1];
+                if (d > 0.002) { if (direction === -1) cycles++; direction = 1; }
+                else if (d < -0.002) { if (direction === 1) cycles++; direction = -1; }
+                if (cycles >= 2) return true;
+            }
+            return false;
+        }
+        function verifyBlink() {
+            const now = performance.now();
+            blinkHistory = blinkHistory.filter(t => now - t <= 2000);
+            return blinkHistory.length >= 3;
+        }
+        function detectBlink(lm) {
+            const Lidx = [33, 160, 158, 133, 153, 144], Ridx = [263, 387, 385, 362, 380, 373];
+            const L = Lidx.map(i => lm[i]), R = Ridx.map(i => lm[i]);
+            const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+            const EAR = (pts) => (d(pts[1], pts[5]) + d(pts[2], pts[4])) / (2 * d(pts[0], pts[3]));
+            const ear = (EAR(L) + EAR(R)) / 2, TH = 0.19;
+            if (!detectBlink.state) detectBlink.state = { closed: false, lastClose: 0 };
+            const s = detectBlink.state;
+            if (ear < TH && !s.closed) { s.closed = true; s.lastClose = performance.now(); }
+            else if (ear >= TH && s.closed) {
+                s.closed = false; if (performance.now() - s.lastClose < 400) blinkHistory.push(performance.now());
+            }
+        }
+        function verifyShowFiveFingers() {
+            if (!palm?.lm) return false;
+            const lm = palm.lm;
+            const THUMB_TIP = 4, THUMB_IP = 3, INDEX_TIP = 8, INDEX_PIP = 6, MIDDLE_TIP = 12, MIDDLE_PIP = 10, RING_TIP = 16, RING_PIP = 14, PINKY_TIP = 20, PINKY_PIP = 18;
+            const isExt = (tip, pip) => (lm[tip].y < lm[pip].y - 0.03);
+            let count = 0;
+            if (Math.abs(lm[THUMB_TIP].x - lm[THUMB_IP].x) > 0.05) count++;
+            if (isExt(INDEX_TIP, INDEX_PIP)) count++;
+            if (isExt(MIDDLE_TIP, MIDDLE_PIP)) count++;
+            if (isExt(RING_TIP, RING_PIP)) count++;
+            if (isExt(PINKY_TIP, PINKY_PIP)) count++;
+            return count >= 5;
+        }
+
+        // ---------- ID capture ----------
+        async function captureIdCard() {
+            captureBtn.disabled = true;
+            await showLineSpeak('Processing your ID card…');
+            try {
+                captureCanvas.width = overlay.width || localVideo.videoWidth || 640;
+                captureCanvas.height = overlay.height || localVideo.videoHeight || 480;
+                captureCtx.drawImage(localVideo, 0, 0, captureCanvas.width, captureCanvas.height);
+                const imageData = captureCanvas.toDataURL('image/jpeg');
+
+                const res = await fetch(`${API_BASE}/api/verify-id`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageData, userId: UID })
+                }).then(r => r.json());
+
+                if (!res.success) throw new Error(res.error || 'ID verification failed');
+
+                idStatus.textContent = 'Verified'; idStatus.className = 'status-value verified';
+                idData.style.display = 'block';
+                const { idInfo } = res;
+                idData.innerHTML = `
+        <h4>Extracted ID Information</h4>
+        <p><strong>ID Number:</strong> ${idInfo.idNumber || 'Not found'}</p>
+        <p><strong>Name:</strong> ${idInfo.name || 'Not found'}</p>
+        <p><strong>Date of Birth:</strong> ${idInfo.dob || 'Not found'}</p>
+        <p><strong>Gender:</strong> ${idInfo.gender || 'Not found'}</p>
+        <p><strong>Mobile:</strong> ${idInfo.mobile || 'Not found'}</p>
+        <p><strong>Address:</strong> ${idInfo.address || 'Not found'}</p>
+      `;
+                await showLineSpeak('ID verification complete. Click “Next Step” to finish.');
+                nextBtn.disabled = false;
+            } catch (e) {
+                console.error(e);
+                idStatus.textContent = 'Failed'; idStatus.className = 'status-value failed';
+                await showLineSpeak('Could not read the ID. Improve lighting and try again.');
+                captureBtn.disabled = false;
+            }
+        }
+
+        // ---------- overlay ----------
+        function drawOverlay() {
+            const W = overlay.width, H = overlay.height;
+            octx.clearRect(0, 0, W, H);
+            if (palm) {
+                const b = palm.bbox;
+                octx.strokeStyle = 'rgba(0,255,0,0.95)';
+                octx.lineWidth = 2;
+                octx.strokeRect(b.minX * W, b.minY * H, (b.maxX - b.minX) * W, (b.maxY - b.minY) * H);
+                octx.beginPath(); octx.arc(palm.smX * W, palm.y * H, 6, 0, Math.PI * 2);
+                octx.fillStyle = 'rgba(0,255,0,0.95)'; octx.fill();
+            }
+            const xs = handHist.map(p => p.x);
+            const amp = xs.length ? (Math.max(...xs) - Math.min(...xs)) : 0;
+            octx.fillStyle = 'rgba(0,0,0,0.55)'; octx.fillRect(8, 8, 360, 100);
+            octx.fillStyle = '#fff'; octx.font = '13px monospace';
+            octx.fillText(`Wave flips: ${waveFSM.cycles} / need ${NEED_TURNS}`, 16, 28);
+            octx.fillText(`Dir: ${waveFSM.lastDir}`, 16, 48);
+            octx.fillText(`Disp window amp: ${amp.toFixed(3)} (th ${DISP_TH})`, 16, 68);
+            octx.fillText(`Blink count (2s): ${blinkHistory.length}`, 16, 88);
+        }
+
+        // ---------- utils / cleanup ----------
+        async function waitForVideoReady(videoEl) {
+            if (videoEl.readyState >= 2 && (videoEl.videoWidth || 0) > 0) return;
+            await new Promise((resolve) => {
+                const onReady = () => {
+                    if ((videoEl.videoWidth || 0) > 0) {
+                        videoEl.removeEventListener('loadedmetadata', onReady);
+                        videoEl.removeEventListener('canplay', onReady);
+                        resolve();
+                    }
+                };
+                videoEl.addEventListener('loadedmetadata', onReady);
+                videoEl.addEventListener('canplay', onReady);
+            });
+        }
+
+        function cleanup() {
+            try {
+                stopSpeech(); sending = false;
+                if (mpCamera) { try { mpCamera.stop(); } catch { } mpCamera = null; }
+                const s = analysisVideo.srcObject; if (s?.getTracks) s.getTracks().forEach(t => t.stop());
+                analysisVideo.srcObject = null;
+                if (localTracks?.length) { localTracks.forEach(t => { try { t.stop(); } catch { } try { t.close(); } catch { } }); }
+                localTracks = [];
+                if (rtcClient) { try { rtcClient.leave(); } catch { } rtcClient = null; }
+            } catch { }
+        }
+
+        // reflect server state (optional)
+        setInterval(async () => {
+            try {
+                const state = await fetch(`${API_BASE}/api/verification-status/${UID}`).then(r => r.json());
+                if (state && (state.livenessOK || state.hand || state.head || state.blink || state.fingers)) {
+                    livenessStatus.textContent = 'Verified'; livenessStatus.className = 'status-value verified';
+                }
+                if (state && state.idVerified) {
+                    idStatus.textContent = 'Verified'; idStatus.className = 'status-value verified';
+                }
+            } catch { }
+        }, 4000);
+    });
+</script>
+
+</html>

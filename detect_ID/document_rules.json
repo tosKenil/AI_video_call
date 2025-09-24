@@ -1,0 +1,313 @@
+{
+    "countries": {
+        "afghanistan": [
+            "afghanistan",
+            "islamic republic of afghanistan"
+        ],
+        "albania": [
+            "albania",
+            "republika e shqiperise"
+        ],
+        "algeria": [
+            "algeria",
+            "people's democratic republic of algeria"
+        ],
+        "argentina": [
+            "argentina",
+            "republica argentina"
+        ],
+        "australia": [
+            "australia",
+            "commonwealth of australia"
+        ],
+        "austria": [
+            "austria",
+            "osterreich"
+        ],
+        "bangladesh": [
+            "bangladesh",
+            "people's republic of bangladesh"
+        ],
+        "belgium": [
+            "belgium",
+            "belgique",
+            "belgie"
+        ],
+        "brazil": [
+            "brazil",
+            "brasil",
+            "republica federativa do brasil"
+        ],
+        "canada": [
+            "canada"
+        ],
+        "china": [
+            "china",
+            "people's republic of china"
+        ],
+        "denmark": [
+            "denmark",
+            "danmark"
+        ],
+        "egypt": [
+            "egypt",
+            "arab republic of egypt"
+        ],
+        "finland": [
+            "finland",
+            "suomi"
+        ],
+        "france": [
+            "france",
+            "republique francaise"
+        ],
+        "germany": [
+            "germany",
+            "deutschland",
+            "bundesrepublik deutschland"
+        ],
+        "greece": [
+            "greece",
+            "hellas",
+            "elliniki dimokratia"
+        ],
+        "hong kong": [
+            "hong kong",
+            "香港"
+        ],
+        "hungary": [
+            "hungary",
+            "magyarorszag"
+        ],
+        "iceland": [
+            "iceland",
+            "island"
+        ],
+        "india": [
+            "india",
+            "republic of india",
+            "bharat"
+        ],
+        "indonesia": [
+            "indonesia",
+            "republik indonesia"
+        ],
+        "iran": [
+            "iran",
+            "islamic republic of iran"
+        ],
+        "iraq": [
+            "iraq",
+            "republic of iraq"
+        ],
+        "ireland": [
+            "ireland",
+            "eire"
+        ],
+        "israel": [
+            "israel",
+            "state of israel"
+        ],
+        "italy": [
+            "italy",
+            "italia",
+            "repubblica italiana"
+        ],
+        "japan": [
+            "japan",
+            "nihon",
+            "nippon"
+        ],
+        "kenya": [
+            "kenya",
+            "republic of kenya"
+        ],
+        "kuwait": [
+            "kuwait",
+            "state of kuwait"
+        ],
+        "lebanon": [
+            "lebanon",
+            "lebanese republic"
+        ],
+        "luxembourg": [
+            "luxembourg",
+            "groussherzogtum letzebuerg"
+        ],
+        "malaysia": [
+            "malaysia",
+            "persekutuan malaysia"
+        ],
+        "mexico": [
+            "mexico",
+            "estados unidos mexicanos"
+        ],
+        "morocco": [
+            "morocco",
+            "kingdom of morocco"
+        ],
+        "nepal": [
+            "nepal",
+            "federal democratic republic of nepal"
+        ],
+        "netherlands": [
+            "netherlands",
+            "nederland"
+        ],
+        "new zealand": [
+            "new zealand",
+            "aotearoa"
+        ],
+        "nigeria": [
+            "nigeria",
+            "federal republic of nigeria"
+        ],
+        "norway": [
+            "norway",
+            "norge",
+            "noreg"
+        ],
+        "pakistan": [
+            "pakistan",
+            "islamic republic of pakistan"
+        ],
+        "philippines": [
+            "philippines",
+            "republika ng pilipinas"
+        ],
+        "poland": [
+            "poland",
+            "rzeczpospolita polska"
+        ],
+        "portugal": [
+            "portugal",
+            "republica portuguesa"
+        ],
+        "qatar": [
+            "qatar",
+            "state of qatar"
+        ],
+        "russia": [
+            "russia",
+            "russian federation",
+            "rossiya"
+        ],
+        "saudi arabia": [
+            "saudi arabia",
+            "kingdom of saudi arabia"
+        ],
+        "singapore": [
+            "singapore",
+            "republic of singapore"
+        ],
+        "south africa": [
+            "south africa",
+            "republic of south africa"
+        ],
+        "south korea": [
+            "south korea",
+            "republic of korea",
+            "대한민국"
+        ],
+        "spain": [
+            "spain",
+            "espana",
+            "reino de espana"
+        ],
+        "sri lanka": [
+            "sri lanka",
+            "democratic socialist republic of sri lanka"
+        ],
+        "sweden": [
+            "sweden",
+            "sverige"
+        ],
+        "switzerland": [
+            "switzerland",
+            "schweiz",
+            "suisse",
+            "svizzera"
+        ],
+        "thailand": [
+            "thailand",
+            "kingdom of thailand"
+        ],
+        "turkey": [
+            "turkey",
+            "turkiye",
+            "republic of turkey"
+        ],
+        "uae": [
+            "united arab emirates",
+            "uae"
+        ],
+        "uk": [
+            "united kingdom",
+            "england",
+            "scotland",
+            "wales",
+            "northern ireland",
+            "great britain"
+        ],
+        "usa": [
+            "united states",
+            "usa",
+            "america",
+            "united states of america"
+        ],
+        "vietnam": [
+            "vietnam",
+            "viet nam",
+            "cong hoa xa hoi chu nghia viet nam"
+        ]
+    },
+    "documentTypes": {
+        "passport": [
+            "passport"
+        ],
+        "driving_license": [
+            "driving license",
+            "driver license",
+            "dl card"
+        ],
+        "national_id": [
+            "identity card",
+            "id card",
+            "national identity",
+            "nid"
+        ],
+        "residence_permit": [
+            "residence permit",
+            "residency card",
+            "pr card",
+            "resident identity"
+        ],
+        "voter_id": [
+            "voter id",
+            "voter card",
+            "elector photo identity"
+        ],
+        "aadhaar_card": [
+            "aadhaar"
+        ],
+        "pan_card": [
+            "pan card",
+            "permanent account number"
+        ],
+        "health_card": [
+            "health card",
+            "medicare",
+            "insurance card"
+        ],
+        "student_id": [
+            "student id",
+            "university id",
+            "college id"
+        ],
+        "military_id": [
+            "military id",
+            "army id",
+            "defense id"
+        ]
+    }
+}
