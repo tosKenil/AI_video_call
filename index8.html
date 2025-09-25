@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screen Recording Permission</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.2s;
+        }
+
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+
+        video {
+            margin-top: 20px;
+            width: 80%;
+            border-radius: 10px;
+            border: 2px solid #334155;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Screen Recording Permission Demo</h2>
+    <button id="requestBtn">Request Screen Permission</button>
+    <button id="recordBtn" disabled>Start Recording</button>
+    <video id="preview" autoplay playsinline></video>
+
+    <script>
+        const requestBtn = document.getElementById("requestBtn");
+        const recordBtn = document.getElementById("recordBtn");
+        const preview = document.getElementById("preview");
+
+        let mediaStream;
+        let mediaRecorder;
+        let chunks = [];
+
+        // Step 1: Ask for screen capture permission
+        requestBtn.onclick = async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: false
+                });
+                preview.srcObject = mediaStream;
+
+                // Enable recording button only if user allowed
+                recordBtn.disabled = false;
+                requestBtn.disabled = true;
+            } catch (err) {
+                alert("Permission denied or canceled!");
+                console.error("Error:", err);
+            }
+        };
+
+        // Step 2: Start recording
+        recordBtn.onclick = () => {
+            if (!mediaStream) return;
+
+            mediaRecorder = new MediaRecorder(mediaStream);
+            chunks = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: "video/webm" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "recording.webm";
+                a.click();
+            };
+
+            mediaRecorder.start();
+            recordBtn.textContent = "Stop Recording";
+
+            recordBtn.onclick = () => {
+                mediaRecorder.stop();
+                recordBtn.textContent = "Start Recording";
+                recordBtn.disabled = true;
+            };
+        };
+    </script>
+</body>
+
+</html>
