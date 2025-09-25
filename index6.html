@@ -324,7 +324,7 @@
             const agentName = document.getElementById('agentName');
 
             // --- Config ---
-            const API_BASE = 'http://localhost:5001';
+            const API_BASE = process.env.BASE_URL;
             const CHANNEL = 'verification-channel';
             const UID = Math.floor(Math.random() * 1_000_000);
 
@@ -351,12 +351,20 @@
                         const blob = new Blob(recordedChunks, { type: 'video/webm' });
                         const fd = new FormData();
                         fd.append('video', blob, `screen_${Date.now()}.webm`);
-                        try { await fetch(`${API_BASE}/api/screenRecorder`, { method: 'POST', body: fd }); } catch (err) { console.error('Upload failed', err); }
+                        try {
+                            await fetch(`${API_BASE}/api/screenRecorder`, { method: 'POST', body: fd });
+                        } catch (err) {
+                            console.error('Upload failed', err);
+                        }
                     };
                     recorder.start();
                     console.log('🎥 Screen recording started');
                 } catch (err) {
                     console.error('❌ Screen recording not started', err);
+                    // AI agent shows + speaks this line
+                    await showLineSpeak('You must enable screen recording to continue the verification.');
+                    startBtn.disabled = false;
+                    throw err; // stop further flow if recording was cancelled
                 }
             }
             function stopScreenRecording() { if (recorder && recorder.state !== 'inactive') { recorder.stop(); console.log('🛑 Screen recording stopped'); } }

@@ -533,8 +533,8 @@ app.post("/api/screenRecorder", upload.single("video"), async (req, res) => {
 });
 
 
-app.get('/index4', (req, res) =>
-  res.sendFile(path.join(__dirname, 'index4.html'))
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, 'index6.html'))
 );
 
 

@@ -285,7 +285,7 @@ speech complete after movement detect start
         const idData = document.getElementById('idData');
 
         // --- Config ---
-        const API_BASE = 'http://localhost:5001';
+        const API_BASE = 'process.env.BASE_URL';
         const CHANNEL = 'verification-channel';
         const UID = Math.floor(Math.random() * 1_000_000);
 
