@@ -85,6 +85,8 @@ const verificationSchema = new mongoose.Schema(
       mobile: String,
       address: String,
     },
+    verificationName: { type: [String], default: [] },
+    screenRecorder: { type: String, default: null },
     idCard: { type: String, default: null },
     hand: { type: Boolean, default: false },
     head: { type: Boolean, default: false },
@@ -101,40 +103,36 @@ const APP_ID = process.env.AGORA_APP_ID;
 const APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE;
 
 
-
-
-
-
 // ----------------- API Routes -----------------
 
 //for video calling this api only return channel name and uid related WEBRTCTOKEN
-app.post("/api/agora-token", upload.none(), (req, res) => {
-  const { channelName, uid } = req.body;
-  if (!channelName || !uid) {
-    return res.status(400).json({ error: "Channel name and UID are required" });
-  }
+// app.post("/api/agora-token", upload.none(), (req, res) => {
+//   const { channelName, uid } = req.body;
+//   if (!channelName || !uid) {
+//     return res.status(400).json({ error: "Channel name and UID are required" });
+//   }
 
-  try {
-    const role = RtcRole.PUBLISHER;
-    const expirationTimeInSeconds = 3600;          // 1 Hour
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+//   try {
+//     const role = RtcRole.PUBLISHER;
+//     const expirationTimeInSeconds = 3600;          // 1 Hour
+//     const currentTimestamp = Math.floor(Date.now() / 1000);
+//     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-    const token = RtcTokenBuilder.buildTokenWithUid(
-      APP_ID,
-      APP_CERTIFICATE,
-      channelName,
-      uid,
-      role,
-      privilegeExpiredTs
-    );
+//     const token = RtcTokenBuilder.buildTokenWithUid(
+//       APP_ID,
+//       APP_CERTIFICATE,
+//       channelName,
+//       uid,
+//       role,
+//       privilegeExpiredTs
+//     );
 
-    res.json({ token, appId: APP_ID });
-  } catch (error) {
-    console.error("Agora token error:", error);
-    res.json({ error: error.message });
-  }
-});
+//     res.json({ token, appId: APP_ID });
+//   } catch (error) {
+//     console.error("Agora token error:", error);
+//     res.json({ error: error.message });
+//   }
+// });
 
 // 2. Add/Update verification step
 app.post("/api/update-verification", upload.none(), async (req, res) => {
@@ -361,6 +359,22 @@ app.get("/api/verification-status/:userId", async (req, res) => {
   }
 });
 
+app.post('/api/aiVerification', upload.single('screenRecorder'), async (req, res) => {
+  try {
+    const { userId, verificationName } = req.body
+
+    const create = await VerificationState.create({
+      userId,
+      verificationName,
+      screenRecorder: req.file.filename
+    })
+    console.log("🚀 ~ create:", create)
+    return res.json({ status: true, data: create, message: "AI verification done" })
+  } catch (err) {
+    return res.json({ status: false, message: "something went wrong" })
+  }
+})
+
 
 
 
@@ -368,139 +382,140 @@ app.get("/api/verification-status/:userId", async (req, res) => {
 // tesseract route
 //==============================================================================
 // ─────────────── Regex patterns ───────────────
-const rx = {
-  SG_ID_STRICT: /\b([STFG]\d{7}[A-Z])\b/i, // Singapore NRIC
-  AADHAAR_12: /\b\d{4}\s?\d{4}\s?\d{4}\b/, // Aadhaar 12 digits
-  PASSPORT: /\b([A-PR-WYa-pr-wy][0-9]{7})\b/, // Passport: Letter + 7 digits
-  GENERIC_ID: /\b([A-Z0-9]{6,12})\b/, // fallback generic ID
-};
+// const rx = {
+//   SG_ID_STRICT: /\b([STFG]\d{7}[A-Z])\b/i, // Singapore NRIC
+//   AADHAAR_12: /\b\d{4}\s?\d{4}\s?\d{4}\b/, // Aadhaar 12 digits
+//   PASSPORT: /\b([A-PR-WYa-pr-wy][0-9]{7})\b/, // Passport: Letter + 7 digits
+//   GENERIC_ID: /\b([A-Z0-9]{6,12})\b/, // fallback generic ID
+// };
 
-const whiteListForTesseract =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/-.,()\'" <>';
+// const whiteListForTesseract =
+//   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:/-.,()\'" <>';
 
-// ─────────────── OCR helpers ───────────────
-const cleanLine = (l) =>
-  l.replace(/[|]+/g, "I")
-    .replace(/[—–]/g, "-")
-    .replace(/[“”]/g, '"')
-    .replace(/[’]/g, "'")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+// // ─────────────── OCR helpers ───────────────
+// const cleanLine = (l) =>
+//   l.replace(/[|]+/g, "I")
+//     .replace(/[—–]/g, "-")
+//     .replace(/[“”]/g, '"')
+//     .replace(/[’]/g, "'")
+//     .replace(/\s{2,}/g, " ")
+//     .trim();
 
-const normalize = (raw) =>
-  raw.replace(/\r/g, "")
-    .split("\n")
-    .map((l) => cleanLine(l))
-    .filter((l) => l && !/</.test(l));
+// const normalize = (raw) =>
+//   raw.replace(/\r/g, "")
+//     .split("\n")
+//     .map((l) => cleanLine(l))
+//     .filter((l) => l && !/</.test(l));
 
-// ─────────────── Document type detection ───────────────
-function detectDocumentType(text, lines) {
-  const t = text.toLowerCase();
+// // ─────────────── Document type detection ───────────────
+// function detectDocumentType(text, lines) {
+//   const t = text.toLowerCase();
 
-  // Aadhaar check → unique 12-digit number + "Government of India"
-  if (rx.AADHAAR_12.test(text) && /government\s+of\s+india/i.test(text)) {
-    return "Aadhaar Card";
-  }
+//   // Aadhaar check → unique 12-digit number + "Government of India"
+//   if (rx.AADHAAR_12.test(text) && /government\s+of\s+india/i.test(text)) {
+//     return "Aadhaar Card";
+//   }
 
-  // NRIC check → "Republic of Singapore" or NRIC format
-  if (rx.SG_ID_STRICT.test(text) || /republic\s+of\s+singapore/i.test(text)) {
-    return "Singapore NRIC Card";
-  }
+//   // NRIC check → "Republic of Singapore" or NRIC format
+//   if (rx.SG_ID_STRICT.test(text) || /republic\s+of\s+singapore/i.test(text)) {
+//     return "Singapore NRIC Card";
+//   }
 
-  // Passport check → regex + keyword
-  if (rx.PASSPORT.test(text) || /passport/i.test(t)) {
-    return "Passport";
-  }
+//   // Passport check → regex + keyword
+//   if (rx.PASSPORT.test(text) || /passport/i.test(t)) {
+//     return "Passport";
+//   }
 
-  // PAN card
-  if (/permanent\s+account\s+number/i.test(t) || /\b[A-Z]{5}[0-9]{4}[A-Z]\b/.test(text)) {
-    return "PAN Card";
-  }
+//   // PAN card
+//   if (/permanent\s+account\s+number/i.test(t) || /\b[A-Z]{5}[0-9]{4}[A-Z]\b/.test(text)) {
+//     return "PAN Card";
+//   }
 
-  // Voter ID
-  if (/election\s+commission|voter\s+id/i.test(t)) {
-    return "Voter ID";
-  }
+//   // Voter ID
+//   if (/election\s+commission|voter\s+id/i.test(t)) {
+//     return "Voter ID";
+//   }
 
-  // Driving License
-  if (/driving\s+licence|driver'?s\s+license/i.test(t)) {
-    return "Driving Licence";
-  }
+//   // Driving License
+//   if (/driving\s+licence|driver'?s\s+license/i.test(t)) {
+//     return "Driving Licence";
+//   }
 
-  // Nepal ID
-  if (/nepal/i.test(t)) {
-    return "Nepal Identity Card";
-  }
+//   // Nepal ID
+//   if (/nepal/i.test(t)) {
+//     return "Nepal Identity Card";
+//   }
 
-  // Generic fallback
-  if (/identity\s*card/i.test(t)) {
-    return "Generic Identity Card";
-  }
+//   // Generic fallback
+//   if (/identity\s*card/i.test(t)) {
+//     return "Generic Identity Card";
+//   }
 
-  return "Unknown Document Type";
-}
+//   return "Unknown Document Type";
+// }
 
-// ─────────────── Parser ───────────────
-function parseIdAndType(ocrText) {
-  const lines = normalize(ocrText);
+// // ─────────────── Parser ───────────────
+// function parseIdAndType(ocrText) {
+//   const lines = normalize(ocrText);
 
-  let idNumber = null;
-  if (rx.SG_ID_STRICT.test(ocrText)) idNumber = ocrText.match(rx.SG_ID_STRICT)[1].toUpperCase();
-  else if (rx.AADHAAR_12.test(ocrText)) idNumber = ocrText.match(rx.AADHAAR_12)[0].replace(/\s/g, "");
-  else if (rx.PASSPORT.test(ocrText)) idNumber = ocrText.match(rx.PASSPORT)[1];
-  else if (rx.GENERIC_ID.test(ocrText)) idNumber = ocrText.match(rx.GENERIC_ID)[1];
+//   let idNumber = null;
+//   if (rx.SG_ID_STRICT.test(ocrText)) idNumber = ocrText.match(rx.SG_ID_STRICT)[1].toUpperCase();
+//   else if (rx.AADHAAR_12.test(ocrText)) idNumber = ocrText.match(rx.AADHAAR_12)[0].replace(/\s/g, "");
+//   else if (rx.PASSPORT.test(ocrText)) idNumber = ocrText.match(rx.PASSPORT)[1];
+//   else if (rx.GENERIC_ID.test(ocrText)) idNumber = ocrText.match(rx.GENERIC_ID)[1];
 
-  const docType = detectDocumentType(ocrText, lines);
+//   const docType = detectDocumentType(ocrText, lines);
 
-  return { idNumber: idNumber || null, documentType: docType, raw: ocrText };
-}
+//   return { idNumber: idNumber || null, documentType: docType, raw: ocrText };
+// }
 
 // ─────────────── API Endpoint ─────────────── 
-app.post("/api/verify-id", upload.single("imageData"), async (req, res) => {
-  try {
-    count++
-    // console.log("🚀 ~ count:", count)
-    if (!req.file) return res.status(400).json({ error: "Image file is required" });
+// app.post("/api/verify-id", upload.single("imageData"), async (req, res) => {
+//   try {
+//     count++
+//     // console.log("🚀 ~ count:", count)
+//     if (!req.file) return res.status(400).json({ error: "Image file is required" });
 
-    // const preprocessed = await sharp(req.file.buffer)
-    //   .rotate()
-    //   .removeAlpha()
-    //   .resize({ width: 2200, withoutEnlargement: false })
-    //   .grayscale()
-    //   .normalize()
-    //   .sharpen()
-    //   .linear(1.25, -10)
-    //   .toBuffer();
+// const preprocessed = await sharp(req.file.buffer)
+//   .rotate()
+//   .removeAlpha()
+//   .resize({ width: 2200, withoutEnlargement: false })
+//   .grayscale()
+//   .normalize()
+//   .sharpen()
+//   .linear(1.25, -10)
+//   .toBuffer();
 
-    // const { data } = await Tesseract.recognize(preprocessed, "eng", {
-    //   tessedit_char_whitelist: whiteListForTesseract,
-    //   preserve_interword_spaces: "1",
-    // });
+// const { data } = await Tesseract.recognize(preprocessed, "eng", {
+//   tessedit_char_whitelist: whiteListForTesseract,
+//   preserve_interword_spaces: "1",
+// });
 
-    // const parsed = parseIdAndType(data.text || "");
-    // const success = parsed.documentType !== "Unknown Document Type";
+// const parsed = parseIdAndType(data.text || "");
+// const success = parsed.documentType !== "Unknown Document Type";
 
-    // return res.json({
-    //   success,
-    //   fields: parsed,
-    //   message: success
-    //     ? "Document type detected successfully"
-    //     : "Could not detect document type",
-    // });
-  } catch (err) {
-    console.error("ID verification error:", err);
-    return res.status(500).json({ error: "Failed to verify ID" });
-  }
-});
+// return res.json({
+//   success,
+//   fields: parsed,
+//   message: success
+//     ? "Document type detected successfully"
+//     : "Could not detect document type",
+// });
+//   } catch (err) {
+//     console.error("ID verification error:", err);
+//     return res.status(500).json({ error: "Failed to verify ID" });
+//   }
+// });
 
 app.post("/api/screenRecorder", upload.single("video"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Image file is required" });
 
-    return res.json({
-      status: "success", message: "done"
-    });
+    const update = await VerificationState.findOneAndUpdate({ userId: req.body.user_id }, { screenRecorde: req.file.filename }, { new: true });
 
+    return res.json({
+      status: "success", message: "done", data: update
+    });
     // const preprocessed = await sharp(req.file.buffer)
     //   .rotate()
     //   .removeAlpha()
@@ -533,7 +548,7 @@ app.post("/api/screenRecorder", upload.single("video"), async (req, res) => {
 });
 
 
-app.get('/', (req, res) =>
+app.get('/home', (req, res) =>
   res.sendFile(path.join(__dirname, 'index6.html'))
 );
 

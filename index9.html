@@ -1,0 +1,64 @@
+speech to text converter
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Speech to Text</title>
+</head>
+
+<body>
+    <button id="startBtn">Start Speaking</button>
+    <p><strong>Output:</strong></p>
+    <div id="output" style="border:1px solid #ccc; padding:10px; width:300px; min-height:50px;"></div>
+
+    <script src="speechToText.js"></script>
+</body>
+
+<script>
+    function startSpeechToText() {
+
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Your browser does not support Speech Recognition. Try using Chrome or Edge.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = "en-US";
+
+            recognition.onresult = (event) => {
+                let transcript = "";
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                console.log("Recognized text:", transcript);
+                document.getElementById("output").innerText = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.log("🚀 ~ startSpeechToText ~ event:", event)
+                console.error("Speech recognition error:", event.error);
+            };
+
+            recognition.start();
+            console.log("Listening... Speak into your microphone.");
+        } catch (error) {
+            console.log("🚀 ~ startSpeechToText ~ error:", error)
+        }
+    }
+
+    // Add button event
+    document.addEventListener("DOMContentLoaded", () => {
+        const button = document.getElementById("startBtn");
+        button.addEventListener("click", startSpeechToText);
+    });
+
+</script>
+
+</html>

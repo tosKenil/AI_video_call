@@ -92,6 +92,7 @@
         }
 
         .ai-message {
+            /* display: none !important; */
             background: #f8f8f8;
             border-left: 4px solid #2d8cf0;
             padding: 15px;
@@ -217,7 +218,7 @@
             opacity: .8;
         }
 
-        .countdown {
+        /* .countdown {
             position: absolute;
             top: 4%;
             left: 90%;
@@ -236,7 +237,7 @@
 
         .countdown .emoji {
             font-size: 22px;
-        }
+        } */
     </style>
 </head>
 
@@ -265,9 +266,9 @@
         </div>
 
         <div class="ai-message" id="aiMessage">Please click "Start Verification" to begin.</div>
-        <div id="countdown" class="countdown" style="visibility: hidden;"><span class="emoji">⏳</span><span
+        <!-- <div id="countdown" class="countdown" style="visibility: hidden;"><span class="emoji">⏳</span><span
                 id="countdownNum">15</span>
-        </div>
+        </div> -->
         <div class="row">
             <div class="card verification-status">
                 <h3>Verification Status</h3>
@@ -317,14 +318,14 @@
             const livenessStatus2 = document.getElementById('livenessStatus2');
             const idStatus = document.getElementById('idStatus');
             const idData = document.getElementById('idData');
-            const countdownEl = document.getElementById('countdown');
+            // const countdownEl = document.getElementById('countdown');
 
             // AI Agent avatar
             const aiAgent = document.getElementById('aiAgent');
             const agentName = document.getElementById('agentName');
 
             // --- Config ---
-            const API_BASE = process.env.BASE_URL;
+            const API_BASE = "http://localhost:5001";
             const CHANNEL = 'verification-channel';
             const UID = Math.floor(Math.random() * 1_000_000);
 
@@ -518,19 +519,21 @@
 
             async function runTimedIdFlow() {
                 const countdownEl = document.getElementById('countdown');
-                // Step 1: ask for first ID and then show countdown
+                // Step 1: ask for first ID and then show countdow
                 await showLineSpeak('Please show me your ID card for verification');
+                await wait(15000);
                 waitForSpeechEnd()
-                countdownEl.style.visibility = 'visible';
-                await runCountdown(15);
-                countdownEl.style.visibility = 'hidden'
+                // countdownEl.style.visibility = 'visible';
+                // await runCountdown(15);
+                // countdownEl.style.visibility = 'hidden'
 
                 // Step 2: ask for second ID and then show countdown
                 await showLineSpeak('Please show me your second ID card for verification');
+                await wait(15000);
                 waitForSpeechEnd()
-                countdownEl.style.visibility = 'visible';
-                await runCountdown(15);
-                countdownEl.style.visibility = 'hidden';
+                // countdownEl.style.visibility = 'visible';
+                // await runCountdown(15);
+                // countdownEl.style.visibility = 'hidden';
 
                 idStatus.textContent = 'Verified';
                 idStatus.className = 'status-value verified';
@@ -541,25 +544,28 @@
                 cleanup();
             }
 
-            function runCountdown(seconds) {
-                return new Promise((resolve) => {
-                    const countdownEl = document.getElementById('countdown');
-                    const numEl = document.getElementById('countdownNum');
-                    let remaining = seconds;
-                    countdownEl.style.display = 'flex';
-                    numEl.textContent = remaining;
-                    const iv = setInterval(() => {
-                        remaining--;
-                        numEl.textContent = remaining;
-                        if (remaining <= 0) {
-                            clearInterval(iv);
-                            countdownEl.style.display = 'none';
-                            resolve();
-                        }
-                    }, 1000);
-                });
-            }
+            // function runCountdown(seconds) {
+            //     return new Promise((resolve) => {
+            //         const countdownEl = document.getElementById('countdown');
+            //         const numEl = document.getElementById('countdownNum');
+            //         let remaining = seconds;
+            //         countdownEl.style.display = 'flex';
+            //         numEl.textContent = remaining;
+            //         const iv = setInterval(() => {
+            //             remaining--;
+            //             numEl.textContent = remaining;
+            //             if (remaining <= 0) {
+            //                 clearInterval(iv);
+            //                 countdownEl.style.display = 'none';
+            //                 resolve();
+            //             }
+            //         }, 1000);
+            //     });
+            // }
 
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
 
 
             function waitForSpeechEnd() {
